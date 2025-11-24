@@ -24,7 +24,9 @@ print("Görev başlatıldı")
 #car_model_list = ["mercedes-benz","opel","peugeot","renault","seat","skoda","tofas"]
 
 # Mirza
-car_model_list = ["toyota","volkswagen","chevrolet", "dacia", "kia", "nissan", "volvo"]
+car_model_list = ["chevrolet", "dacia", "kia", "nissan", "volvo"]
+
+
 
 
 
@@ -36,30 +38,35 @@ for model in car_model_list:
     print(f"Model {model} için tarama başladı...")
     for i in range(1,51): #1,51 - 50 sayfa değerlendirilicek
 
-        url = f"https://www.arabam.com/ikinci-el/otomobil/{model}?take=50&page={i}"
-        driver.get(url)
+        try:
+            url = f"https://www.arabam.com/ikinci-el/otomobil/{model}?take=50&page={i}"
+            driver.get(url)
 
+            
+            table_element = driver.find_element(By.XPATH,"//table[@id='main-listing']")
+
+            car_list = WebDriverWait(driver, 5).until(
+                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr'))
+            )
+
+            for car_item in car_list:
+                try:
+                    car_link  = car_item.find_element(By.TAG_NAME,'a').get_attribute('href')
+                    car_link_set.add(car_link)
+                except:
+                    print("Tag a bulunamadı maalesef")    
+
+        except:
+            print("Model sayfası alınırken sorun oluştu.")
         
-        table_element = driver.find_element(By.XPATH,"//table[@id='main-listing']")
-
-        car_list = WebDriverWait(driver, 5).until(
-                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr'))
-        )
-
-        for car_item in car_list:
-            try:
-                car_link  = car_item.find_element(By.TAG_NAME,'a').get_attribute('href')
-                car_link_set.add(car_link)
-                count = count +1
-            except:
-                print("Tag a bulunamadı maalesef")    
-
         time.sleep(10) 
         #Web sitesinin tespit etmesini önlemek için bekle
 
         finish_time = time.time()
 
         print(f"Model {model} için harcanan süre {finish_time - starting_time}s")
+
+
 
     filename = f"car_{model}_links.json"
 
@@ -70,6 +77,8 @@ for model in car_model_list:
         
     car_link_arr = []
     car_link_set = set()
+
+
 
 driver.quit()
 
