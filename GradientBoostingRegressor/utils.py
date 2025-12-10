@@ -35,26 +35,28 @@ def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, floa
     Regresyon metrikleri:
       - MAE
       - RMSE
+      - MSE
       - R^2
 
-    Final raporda kullanacağınızı belirttiğiniz metrik seti ile uyumlu.
+    Final raporda kullanacağınız metrik seti ile uyumlu.
     """
     y_true = np.asarray(y_true).reshape(-1)
     y_pred = np.asarray(y_pred).reshape(-1)
 
     mae = float(mean_absolute_error(y_true, y_pred))
 
-    # RMSE: sklearn versiyon farklarına dayanıklı hesap
+    # RMSE / MSE: sklearn versiyon farklarına dayanıklı hesap
     sig = inspect.signature(mean_squared_error)
     if "squared" in sig.parameters:
         rmse = float(mean_squared_error(y_true, y_pred, squared=False))
+        mse = float(mean_squared_error(y_true, y_pred, squared=True))
     else:
         mse = float(mean_squared_error(y_true, y_pred))
         rmse = float(np.sqrt(mse))
 
     r2 = float(r2_score(y_true, y_pred))
 
-    return {"mae": mae, "rmse": rmse, "r2": r2}
+    return {"mae": mae, "rmse": rmse, "mse": mse, "r2": r2}
 
 
 def save_json(data: dict, path: str | Path) -> None:

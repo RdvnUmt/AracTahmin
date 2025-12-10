@@ -1,5 +1,3 @@
-# train_gbr.py
-
 from __future__ import annotations
 
 import argparse
@@ -117,6 +115,7 @@ def main():
     # -------------------------------------------------------------------------
     # 4) Hiperparametre optimizasyonu (RandomizedSearchCV + KFold)
     #    Yalnızca --tune verilmişse çalışır
+    #    -> ARTIK MSE'yi (mean_squared_error) minimize ediyoruz
     # -------------------------------------------------------------------------
     tuned_estimator = None
     tuned_train_metrics = None
@@ -143,43 +142,43 @@ def main():
             estimator=clone(model_template),
             param_distributions=param_dist,
             n_iter=args.n_iter,
-            scoring="neg_mean_absolute_error",  # MAE'yi minimize ediyoruz
+            scoring="neg_mean_squared_error",  # MSE'yi minimize ediyoruz
             cv=cv,
             random_state=args.seed,
             n_jobs=-1,
             verbose=1,
         )
 
-        print("\n=== RandomizedSearchCV ile hiperparametre optimizasyonu başlıyor ===")
+        print("\n=== RandomizedSearchCV ile hiperparametre optimizasyonu başlıyor (scoring = neg_mean_squared_error) ===")
         search.fit(X_train, y_train)
 
         tuned_estimator = search.best_estimator_
         best_params = search.best_params_
 
-        # CV sonuçlarını CSV'ye kaydet (bonus / rapor için)
+        # CV sonuçlarını CSV'ye kaydet (MSE bazlı)
         cv_results = pd.DataFrame(search.cv_results_)
         if "mean_test_score" in cv_results.columns:
-            # skor: neg_mean_absolute_error; pozitif MAE için işaret çeviriyoruz
-            cv_results["mean_val_mae"] = -cv_results["mean_test_score"]
+            # skor: neg_mean_squared_error; pozitif MSE için işaret çeviriyoruz
+            cv_results["mean_val_mse"] = -cv_results["mean_test_score"]
         cv_results.to_csv(artifacts_dir / "gbr_cv_results.csv", index=False)
 
         # CV özeti
         cv_info = {
             "cv_folds": int(args.cv),
             "n_iter": int(args.n_iter),
-            "scoring": "neg_mean_absolute_error",
-            "best_cv_score_neg_mae": float(search.best_score_),
-            "best_cv_mae": float(-search.best_score_),
+            "scoring": "neg_mean_squared_error",
+            "best_cv_score_neg_mse": float(search.best_score_),
+            "best_cv_mse": float(-search.best_score_),
         }
 
-        # Tuned model metrikleri
+        # Tuned model metrikleri (MAE, RMSE, MSE, R2)
         y_pred_train_tuned = tuned_estimator.predict(X_train)
         y_pred_test_tuned = tuned_estimator.predict(X_test)
 
         tuned_train_metrics = regression_metrics(y_train, y_pred_train_tuned)
         tuned_test_metrics = regression_metrics(y_test, y_pred_test_tuned)
 
-        print("\n=== Tuned model (RandomizedSearchCV sonucu) ===")
+        print("\n=== Tuned model (RandomizedSearchCV sonucu, MSE optimizasyonu) ===")
         print("Best params:", best_params)
         print("Train metrics:", tuned_train_metrics)
         print("Test  metrics:", tuned_test_metrics)
